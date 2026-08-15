@@ -52,8 +52,65 @@
 | Pic CPU sans limite | 350 % |
 | RAM disponible au repos | 2,5 Go |
 
+---
+
+## 2026-08-15 — Étape 2 : génération de logs
+
+### Réalisé
+
+**Serveur web cible**
+- nginx installé dans la VM (les attaques web ciblent la VM, pas l'hôte
+  qui tourne sous Apache)
+
+**Principe : attaquer depuis l'hôte vers la VM**
+- Les attaques sont lancées depuis l'hôte (`192.168.1.25`) vers la VM
+  (`192.168.1.17`), pour obtenir une IP source externe identifiable
+  plutôt que le loopback `::1`.
+
+**Attaques web simulées (script `attack-web.sh`)**
+- Scan de fichiers sensibles : `/admin`, `/wp-login.php`, `/.env`,
+  `/.git/config`, `/phpmyadmin` → codes 404
+- Path traversal `/../../etc/passwd` avec `curl --path-as-is` → code 400
+- Injection SQL et XSS avec `curl -G --data-urlencode` → payloads
+  correctement encodés dans les logs
+
+**Bruteforce SSH (hydra depuis l'hôte)**
+- `hydra -L users.txt -P wordlist.txt -t 4 ssh://192.168.1.17`
+- 35 combinaisons testées, 0 réussite (accès par clé) — objectif :
+  générer les échecs, pas entrer
+- Traces dans journald : rafale de `Failed password` / `Invalid user`
+  depuis une même IP en ~25 s
+
+**Trafic normal (ligne de base)**
+- Web : requêtes `GET /` répétées → codes 200
+- SSH : connexion légitime → `Accepted publickey for arth`
+
+**Jeu de données obtenu** : les quatre quadrants — web normal (200),
+web malveillant (404/400), SSH normal (accepted), SSH malveillant
+(failed) — avec IP sources identifiables.
+
+### Obstacles rencontrés
+
+- **Pas de `/var/log/auth.log`** : Ubuntu Server 24.04 utilise journald
+  seul, sans rsyslog. Les échecs SSH se lisent avec
+  `journalctl _COMM=sshd`, pas dans un fichier texte.
+- **`curl` renvoyait `000` sur l'injection SQL** : les caractères
+  spéciaux (`'`, espace) cassaient l'URL. Résolu avec
+  `-G --data-urlencode`, qui encode proprement avant l'envoi.
+- **`curl` normalisait le path traversal** : `/../../etc/passwd` arrivait
+  comme `/etc/passwd` dans le log. Résolu avec `--path-as-is`.
+- **Confusion hôte/VM** : `curl` vers `192.168.1.25` renvoyait Apache
+  (l'hôte), pas nginx. L'IP de la VM (`.17`) se lit avec `ip -br addr`
+  depuis l'intérieur de la VM.
+
+### Note de conception
+
+fail2ban volontairement **non installé** à ce stade : il bloquerait
+hydra et réduirait la matière à analyser. Réservé à l'étape 5-6 comme
+démonstration de contre-mesure.
+
 ### Prochaine étape
 
-Étape 2 — génération de logs : trafic HTTP normal via nginx, attaques
-simulées (bruteforce SSH avec hydra, scan de ports avec nmap, requêtes
-web malveillantes), capture d'un jeu de données daté.
+Étape 3 — ingestion : script Python qui lit les deux sources (journald
+en JSON pour SSH, fichier texte pour nginx), extrait timestamp / IP
+source / type d'événement / sévérité, et normalise dans un format commun.

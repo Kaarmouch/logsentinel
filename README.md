@@ -14,6 +14,7 @@ explications lisibles.
 
 | Composant | Rôle | État |
 |---|---|---|
+| nginx | Serveur web cible (surface d'attaque web) | En place |
 | Ollama | Inférence LLM locale (qwen2.5) | En place |
 | ChromaDB | Base vectorielle pour la recherche par similarité | En place |
 | Docker Compose | Isolation des services | En place |
@@ -24,12 +25,26 @@ explications lisibles.
 ## Roadmap
 
 - [x] **Étape 1** — Environnement : VM Ubuntu, Docker, Ollama, ChromaDB
-- [ ] **Étape 2** — Génération de logs : trafic normal et attaques simulées
+- [x] **Étape 2** — Génération de logs : trafic normal et attaques simulées
 - [ ] **Étape 3** — Ingestion : script Python de parsing et normalisation
 - [ ] **Étape 4** — Vectorisation : embeddings des logs dans ChromaDB
 - [ ] **Étape 5** — Détection : analyse LLM et scoring d'anomalie
 - [ ] **Étape 6** — Dashboard React/Vite
 - [ ] **Étape 7** — Documentation et démo
+
+## Jeu de données de test
+
+Les scripts de `scripts/` génèrent quatre types d'événements, avec IP
+source identifiable (attaques lancées depuis l'hôte vers la VM) :
+
+| Source | Normal | Malveillant |
+|---|---|---|
+| Web (nginx) | `GET /` → 200 | scan 404, path traversal 400, injection SQL/XSS |
+| SSH (journald) | `Accepted publickey` | bruteforce `Failed password` (hydra) |
+
+Note : les logs générés contiennent des adresses IP et ne sont **pas**
+versionnés (voir `.gitignore`). Seuls les scripts qui les produisent
+le sont.
 
 ## Démarrage
 

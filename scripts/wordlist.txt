@@ -1,0 +1,7 @@
+admin
+password
+123456
+root
+toor
+letmein
+qwerty
