@@ -1,0 +1,25 @@
+# secrets et config locale
+.env
+*.key
+*.pem
+*.crt
+
+# données runtime
+data/
+logs/
+*.log
+*.db
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# node
+node_modules/
+dist/
+
+# système
+.DS_Store
+*.swp
