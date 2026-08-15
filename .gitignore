@@ -1,27 +1,43 @@
-# secrets et config locale
+# === Secrets et config locale ===
 .env
+.env.local
 *.key
 *.pem
 *.crt
+id_ed25519*
 
-docs/
-
-# données runtime
+# === Données de logs et datasets (RGPD : contiennent des IP) ===
+# On versionne les SCRIPTS qui génèrent les logs, jamais les logs.
+datasets/
 data/
 logs/
 *.log
-*.db
+*.journal
+dumps/
 
-# python
+# === Python (étape 3+) ===
 __pycache__/
 *.pyc
+*.pyo
 .venv/
 venv/
+.pytest_cache/
+.mypy_cache/
 
-# node
+# === Node / React-Vite (étape 6) ===
 node_modules/
 dist/
+dist-ssr/
+*.local
+.vite/
 
-# système
-.DS_Store
+# === Éditeurs et système ===
+.vscode/
+.idea/
 *.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# === Docker (volumes locaux éventuels) ===
+volumes/
