@@ -1,30 +1,35 @@
 # LogSentinel
 
 Détecteur d'anomalies dans les logs de sécurité, combinant un SIEM léger
-et un LLM exécuté localement.
+et un LLM exécuté localement. Aucune donnée ne sort de l'infrastructure.
 
 ## Objectif
 
-Collecter des journaux système authentiques (tentatives d'intrusion SSH,
-scans de ports), les indexer, et utiliser un modèle de langage local pour
-qualifier les événements et produire des synthèses lisibles — sans qu'aucune
-donnée ne sorte de l'infrastructure.
+Générer des journaux système (trafic normal + attaques simulées), les
+normaliser, les indexer dans une base vectorielle, et utiliser un modèle
+de langage local pour qualifier les événements suspects et produire des
+explications lisibles.
 
-## Architecture
+## Stack
 
-| Composant | Rôle |
-|---|---|
-| Promtail | Collecte et étiquetage des logs système |
-| Loki | Stockage et requêtage (LogQL) |
-| Ollama | Inférence LLM locale |
-| ChromaDB | Base vectorielle pour la recherche sémantique |
+| Composant | Rôle | État |
+|---|---|---|
+| Ollama | Inférence LLM locale (qwen2.5) | En place |
+| ChromaDB | Base vectorielle pour la recherche par similarité | En place |
+| Docker Compose | Isolation des services | En place |
+| hydra / nmap | Génération d'attaques simulées | En place |
+| Script Python | Parsing et normalisation des logs | À venir |
+| React / Vite | Dashboard des alertes | À venir |
 
-## État d'avancement
+## Roadmap
 
-- [x] Étape 1 — Socle : VM Ubuntu, Docker, Ollama, ChromaDB
-- [ ] Étape 2 — Collecte : Promtail, Loki, Grafana
-- [ ] Étape 3 — Pipeline d'analyse
-- [ ] Étape 4 — Déploiement VPS et logs réels
+- [x] **Étape 1** — Environnement : VM Ubuntu, Docker, Ollama, ChromaDB
+- [ ] **Étape 2** — Génération de logs : trafic normal et attaques simulées
+- [ ] **Étape 3** — Ingestion : script Python de parsing et normalisation
+- [ ] **Étape 4** — Vectorisation : embeddings des logs dans ChromaDB
+- [ ] **Étape 5** — Détection : analyse LLM et scoring d'anomalie
+- [ ] **Étape 6** — Dashboard React/Vite
+- [ ] **Étape 7** — Documentation et démo
 
 ## Démarrage
 
@@ -44,7 +49,8 @@ ssh -L 11434:localhost:11434 -L 8000:localhost:8000 user@host
 
 ## Environnement de développement
 
-VM VirtualBox — Ubuntu Server 24.04, 3 Go RAM, 2 vCPU, réseau ponté.
+VM VirtualBox 7.0 — Ubuntu Server 24.04, 3 Go RAM, 2 vCPU, disque
+dynamique 40 Go, réseau en pont.
 
 ## Documentation
 
