@@ -19,14 +19,13 @@ explications lisibles.
 | ChromaDB | Base vectorielle pour la recherche par similarité | En place |
 | Docker Compose | Isolation des services | En place |
 | hydra / nmap | Génération d'attaques simulées | En place |
-| Script Python | Parsing et normalisation des logs | À venir |
-| React / Vite | Dashboard des alertes | À venir |
+| Script Python | Parsing et normalisation des logs | En place |
 
 ## Roadmap
 
 - [x] **Étape 1** — Environnement : VM Ubuntu, Docker, Ollama, ChromaDB
 - [x] **Étape 2** — Génération de logs : trafic normal et attaques simulées
-- [ ] **Étape 3** — Ingestion : script Python de parsing et normalisation
+- [x] **Étape 3** — Ingestion : script Python de parsing et normalisation
 - [ ] **Étape 4** — Vectorisation : embeddings des logs dans ChromaDB
 - [ ] **Étape 5** — Détection : analyse LLM et scoring d'anomalie
 - [ ] **Étape 6** — Dashboard React/Vite
