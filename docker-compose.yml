@@ -1,25 +1,23 @@
-services:
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    ports: ["127.0.0.1:11434:11434"]
-    volumes: [ollama:/root/.ollama]
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "1.5"
-          memory: 2g
-  chromadb:
+services:                              # la liste des conteneurs à gérer
+  ollama:                              # 1er service — son nom = son nom d'hôte sur le réseau interne
+    image: ollama/ollama:latest        # image tirée de Docker Hub
+    container_name: ollama             # nom fixe (sinon "logsentinel-ollama-1")
+#  cpus: 1.5                          # plafond CPU : 1,5 cœur (syntaxe native Compose)
+    mem_limit: 2g                      # plafond RAM : 2 Go, Docker tue le conteneur au-delà
+    ports: ["127.0.0.1:11434:11434"]   # publie le port UNIQUEMENT sur le loopback de la VM
+    volumes: [ollama:/root/.ollama]    # stockage persistant des modèles (survit à un down)
+    restart: unless-stopped            # redémarre au boot / après crash, sauf arrêt manuel
+
+  chromadb:                            # 2e service
     image: chromadb/chroma:latest
     container_name: chromadb
-    ports: ["127.0.0.1:8000:8000"]
-    volumes: [chroma:/data]
-    environment:
-      - IS_PERSISTENT=TRUE
-      - ANONYMIZED_TELEMETRY=FALSE
+    ports: ["127.0.0.1:8000:8000"]     # API Chroma, loopback seulement
+    volumes: [chroma:/data]            # persistance de la base vectorielle
+    environment:                       # variables passées au conteneur
+      - IS_PERSISTENT=TRUE             # Chroma écrit sur disque (sinon tout en RAM, perdu au reboot)
+      - ANONYMIZED_TELEMETRY=FALSE     # coupe la télémétrie sortante
     restart: unless-stopped
 
-volumes:
-  ollama:
-  chroma:
+volumes:                               # déclaration des volumes nommés référencés plus haut
+  ollama:                              # → /var/lib/docker/volumes/logsentinel_ollama
+  chroma:                              # → logsentinel_chroma
