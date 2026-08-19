@@ -171,8 +171,59 @@ Chaque source garde ses champs propres (`user` pour SSH ;
 | Échecs SSH depuis 127.0.0.1 | 70 |
 | Scans web depuis 192.168.1.25 | 8 |
 
+---
+
+## 2026-08-16 — Étape 4 : vectorisation (partielle, mise en pause)
+
+### Réalisé
+
+**Modèle d'embedding**
+- `nomic-embed-text` (274 Mo) tiré dans Ollama, distinct du modèle de
+  génération `qwen2.5:0.5b`. Vecteurs de dimension 768.
+- `qwen2.5:1.5b` retiré pour libérer ~986 Mo (inutile, le 0.5b suffit)
+
+**Code de vectorisation** (trois modules)
+- `embed.py` : appelle l'API `/api/embed` d'Ollama en lot
+  (`input` = liste de textes). `event_to_text` enrichit le message brut
+  avec le type et la sévérité avant vectorisation.
+- `vectorstore.py` : client `chromadb.HttpClient` vers le conteneur,
+  collection `logsentinel_events`, `embedding_function=None` (on
+  fournit nos propres vecteurs Ollama)
+- `index_events.py` : charge `events.json`, vectorise par lots de 32,
+  stocke id + document + embedding + métadonnées dans ChromaDB
+
+### Obstacle majeur : performance CPU
+
+- Chaque embedding prend ~1,4 s sur les 2 vCPU de la VM (pas de GPU
+  dans la VM). 232 événements ≈ 5 min de calcul **incompressible**.
+- Fausses pistes explorées : parallélisation par threads (sans effet,
+  Ollama sature déjà les 2 cœurs) puis batch unique de 232 (timeout
+  à 120 s, la requête tenait 5 min).
+- Solution retenue : découpage en lots de 32, chaque lot sous le
+  timeout, progression visible. Le temps total reste ~5 min : c'est
+  une limite matérielle, pas logicielle.
+
+### Décision
+
+Vectorisation **mise en pause**, pas abandonnée. Le code reste en place
+et fonctionnel. Deux leviers identifiés pour plus tard :
+- déduplication des quasi-doublons (les 112 `Failed password` se
+  ressemblent ; en garder quelques-uns suffirait)
+- exécution sur une machine plus capable (VPS, ou GPU de l'hôte hors VM)
+
+L'analyse LLM (étape 5) sera branchée en **second étage** : uniquement
+sur les IP déjà signalées par `analyze.py`, pas sur tout le flux. Deux
+ou trois appels au LLM pour une explication en langage naturel, au lieu
+de vectoriser 232 événements.
+
+### Réorientation
+
+Passage à l'**étape 6 (dashboard)** avant de finaliser l'IA. Le projet
+a déjà de quoi alimenter une interface (profils par IP, types,
+sévérités, timeline). L'IA lourde reviendra sur un hardware adapté.
+
 ### Prochaine étape
 
-Étape 4 — vectorisation : transformer chaque événement normalisé en
-embedding (via Ollama) et le stocker dans ChromaDB, pour permettre la
-recherche par similarité avec des patterns d'attaque connus.
+Étape 6 — dashboard : backend FastAPI qui sert `events.json` et les
+profils par IP, frontend React/Vite pour visualiser alertes, sévérités
+et timeline.
